@@ -1,7 +1,6 @@
 import logging
 import os
 
-# Bonus: stops a common warning about threading
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 logging.getLogger("transformers.modeling_utils").setLevel(logging.ERROR)
 
@@ -14,7 +13,6 @@ from uuid import uuid4
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-# Load environment variables from .env file
 load_dotenv()
 
 # Load the document
@@ -25,13 +23,13 @@ documents = loader.load()
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=30)
 chunks = text_splitter.split_documents(documents)
 
-# Step 2: Create embeddings
-model = SentenceTransformer('all-MiniLM-L6-v2')  # 384-dim embeddings
+# Create embeddings
+model = SentenceTransformer('all-MiniLM-L6-v2')
 embeddings = model.encode([chunk.page_content for chunk in chunks])
 
 cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
 
-# Step 3: Create ChromaDB collection and add documents and embeddings
+# Create ChromaDB collection and add documents and embeddings
 client = chromadb.PersistentClient(path="./chroma_db")
 collection = client.get_or_create_collection("docs")
 collection.add(
@@ -40,7 +38,7 @@ collection.add(
     ids = [str(uuid4()) for _ in chunks]
 )
 
-# Step 4: Retrieval function
+# Retrieval function
 def retrieve(query, k=2):
     query_embedding = model.encode([query])
 
@@ -51,6 +49,7 @@ def retrieve(query, k=2):
 
     return results['documents'][0]
 
+# Reranking function
 def rerank(query, documents, top_n=3):
     pairs = [(query, doc) for doc in documents]
     scores = cross_encoder.predict(pairs)
@@ -58,12 +57,12 @@ def rerank(query, documents, top_n=3):
     # Sortiraj po score-u (opadajuće) i uzmi top_n
     return [documents[i] for i in np.argsort(scores)[-top_n:]]
 
-# Step 5: RAG function
+# RAG function
 def rag_query(question):
     # Retrieve relevant docs
     candidates = retrieve(question, 10)
 
-     # 2. Reranking kandidata
+    # Rerank
     context = rerank(question, candidates, top_n=3)
 
     # Create prompt
@@ -88,7 +87,7 @@ def rag_query(question):
 
     # Generate response
     llm = OllamaLLM(
-        model="gemma4:latest",
+        model="llama3.2",
         temperature=0,
     )
     
