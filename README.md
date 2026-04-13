@@ -82,7 +82,7 @@ This step ensures the **text generation** is grounded in reality, reducing hallu
 
 ## Optimization & Open-Source Options
 
-Everything in this setup is **open-source** except the **LLM API**.
+Everything in this setup is **open-source**.
 
 * For embeddings: **all-MiniLM-L6-v2** (open-source, lightweight)
 * For vector store: **ChromaDB** (fast, reliable)
